@@ -1,0 +1,8 @@
+{
+  "administrators": [],
+  // 管理员列表，只有在此列表中的玩家才能执行远程命令
+  "remoteCommandEnabled": true,
+  // 是否启用远程命令功能
+  "remoteCommandAdminEnabled": false
+  // 是否允许通过远程命令执行 admin add 操作（启用后管理员可以通过远程命令添加其他管理员，否则只能通过控制台添加）
+}
