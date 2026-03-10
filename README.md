@@ -13,12 +13,14 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 - ✅ 支持多个命令前缀
 - ✅ **以控制台身份执行命令**（通过 `CommandManager.callCommand()` 直接处理）
 - ✅ **exec 子命令** - 通过控制台执行任意 xinbot 命令
+- ✅ **命令审计日志** - 自动记录所有执行的远程命令到文件
 
 ## 安装方法
 
 1. 将编译好的 jar 文件放入 xinbot 的 `plugins` 目录
 2. 启动 xinbot，插件会自动加载并生成配置文件
 3. 配置文件位置：`plugin/XinCmd/config.json`
+4. 日志文件位置：`plugin/XinCmd/remote_command.log`（首次执行远程命令时自动创建）
 
 ## 配置说明
 
@@ -158,6 +160,7 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 - **自动恢复**: 命令执行失败不会影响插件的正常运行
 - **命令处理器**: 使用 `CommandProcessor` 统一管理命令执行
 - **控制台集成**: 通过 `CommandManager.callCommand()` 直接与 xinbot 命令系统交互
+- **日志记录**: 所有远程命令自动记录到文件，支持审计和追溯
 
 ## 与 XinPga 的区别
 
