@@ -9,6 +9,7 @@ import xin.bbtt.mcbot.events.PrivateChatEvent;
 import top.mcocet.xincmd.config.XinCmdConfig;
 import top.mcocet.xincmd.command.RemoteCommand;
 import top.mcocet.xincmd.command.RemoteCommandExecutor;
+import top.mcocet.xincmd.service.CommandProcessor;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,9 +22,11 @@ public class XinCmd implements Plugin, Listener {
 
     private XinCmdConfig config;
     private final Path configPath = Paths.get("plugin", "XinCmd", "config.json");
+    private CommandProcessor commandProcessor;
 
     public XinCmd() {
         INSTANCE = this;
+        commandProcessor = new CommandProcessor();
     }
 
     @Override
@@ -33,7 +36,7 @@ public class XinCmd implements Plugin, Listener {
 
     @Override
     public String getVersion() {
-        return "1.0";
+        return "1.1-SNAPSHOT";
     }
 
     @Override
@@ -101,20 +104,35 @@ public class XinCmd implements Plugin, Listener {
 
             // 检查消息是否以命令关键字开头
             String commandPrefix = null;
+            String commandType = null; // 用于区分 xrcmd 和普通命令
+                        
             if (message.startsWith("#command xrcmd ")) {
                 commandPrefix = "#command xrcmd ";
+                commandType = "xrcmd";
             } else if (message.startsWith("#cmd xrcmd ")) {
                 commandPrefix = "#cmd xrcmd ";
+                commandType = "xrcmd";
+            } else if (message.startsWith("#command ")) {
+                commandPrefix = "#command ";
+                commandType = "normal";
+            } else if (message.startsWith("#cmd ")) {
+                commandPrefix = "#cmd ";
+                commandType = "normal";
             }
 
             if (commandPrefix != null) {
                 // 提取命令部分
                 String command = message.substring(commandPrefix.length());
                 getLogger().info("收到来自管理员 " + playerName + " 的远程命令：" + command);
-
+            
                 // 异步执行命令，避免阻塞事件线程
+                final String finalCommandType = commandType;
                 CompletableFuture.runAsync(() -> {
-                    executeRemoteCommand(playerName, command);
+                   if ("xrcmd".equals(finalCommandType)) {
+                        executeRemoteCommand(playerName, command);
+                    } else {
+                        executeConsoleCommand(command);
+                    }
                 });
             }
         } catch (Exception e) {
@@ -146,7 +164,22 @@ public class XinCmd implements Plugin, Listener {
         sendCommandResultsToAdmin(playerName, output);
     }
 
-    // 通过私聊发送命令结果给管理员
+    // 执行普通命令（以控制台身份执行，用于 #command 和 #cmd 前缀）
+    private void executeConsoleCommand(String command) {
+        try {
+            getLogger().info("通过控制台执行命令：" + command);
+            
+            // 使用 CommandProcessor 以控制台模式执行命令
+            // 这会调用 Bot.Instance.executeCommand() 在本地控制台执行
+            List<String> result = commandProcessor.executeCommand(command, true);
+            
+            for (String line : result) {
+                getLogger().info(line);
+            }
+        } catch (Exception e) {
+            getLogger().error("执行命令时发生错误：" + e.getMessage());
+        }
+    }
     private void sendCommandResultsToAdmin(String playerName, List<String> results) {
         if (results.isEmpty()) {
             return;
@@ -158,6 +191,7 @@ public class XinCmd implements Plugin, Listener {
                     if (!line.trim().isEmpty()) {
                         // 添加延迟，避免消息发送过快
                         Thread.sleep(200);
+                        // 使用 xinbot 的 msg 命令发送私聊消息
                         Bot.Instance.sendCommand("msg " + playerName + " " + line);
                     }
                 }

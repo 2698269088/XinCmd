@@ -7,15 +7,22 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 import top.mcocet.xincmd.XinCmd;
+import top.mcocet.xincmd.service.CommandProcessor;
 
 public class RemoteCommandHandler {
     private static final Logger log = LoggerFactory.getLogger("XinCmdRemoteCommandHandler");
+    private final CommandProcessor commandProcessor;
+
+    public RemoteCommandHandler() {
+        this.commandProcessor = new CommandProcessor();
+    }
 
     public void handleCommand(Command cmd, String label, String[] args) {
         switch (args[0].toLowerCase()) {
             case "reload" -> XinCmd.INSTANCE.cmdReload();
             case "admin" -> handleAdminCommand(args);
             case "help" -> showHelp(cmd);
+            case "exec" -> handleExecCommand(args);
           default -> log.warn("未知子命令：" + args[0] + "！用法：" + cmd.getUsage());
         }
     }
@@ -49,6 +56,34 @@ public class RemoteCommandHandler {
         }
     }
 
+    // 处理 exec 命令 - 以控制台模式执行其他命令
+    private void handleExecCommand(String[] args) {
+        if (args.length < 2) {
+            log.info("用法：/xrcmd exec <命令> [参数...]");
+            log.info("示例：/xrcmd exec say hello world");
+            return;
+        }
+        
+        // 提取要执行的命令（从第二个参数开始）
+        StringBuilder commandBuilder= new StringBuilder();
+        for (int i = 1; i < args.length; i++) {
+            if (i > 0) {
+                commandBuilder.append(" ");
+            }
+            commandBuilder.append(args[i]);
+        }
+        
+        String command = commandBuilder.toString();
+        log.info("准备以控制台模式执行命令：" + command);
+        
+        // 使用 CommandProcessor 以控制台模式执行命令
+        commandProcessor.executeCommandAsync(command, true, results -> {
+            for (String result : results) {
+                log.info(result);
+            }
+        });
+    }
+
     // 显示帮助信息
     private void showHelp(Command cmd) {
         log.info("=== XinCmd 插件远程命令帮助 ===");
@@ -56,6 +91,7 @@ public class RemoteCommandHandler {
         log.info("#command xrcmd admin add <玩家名> - 添加玩家到管理员列表");
         log.info("#command xrcmd admin remove <玩家名> - 从管理员列表移除玩家");
         log.info("#command xrcmd admin list - 列出管理员");
+        log.info("#command xrcmd exec <命令> [参数...] - 通过 xinbot 执行其他命令");
         log.info("#command xrcmd help - 显示此帮助信息");
         log.info("==============================");
     }

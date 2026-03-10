@@ -20,6 +20,6 @@ public class RemoteCommand extends Command {
 
     @Override
     public String getUsage() {
-        return "/xrcmd reload|admin add <玩家名>|admin remove <玩家名>|admin list|help";
+        return "/xrcmd reload|admin add <玩家名>|admin remove <玩家名>|admin list|exec <命令> [参数...]|help";
     }
 }

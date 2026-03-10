@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import top.mcocet.xincmd.XinCmd;
+import top.mcocet.xincmd.service.CommandProcessor;
 
 public class RemoteCommandExecutor extends TabExecutor {
     private static final Logger log = LoggerFactory.getLogger("XinCmdRemoteCommandExecutor");
@@ -48,6 +49,7 @@ public class RemoteCommandExecutor extends TabExecutor {
                 }
                 case "admin" -> handleAdminCommandWithOutput(args, output);
                 case "help" -> output.addAll(showHelpOutput());
+                case "exec" -> handleExecCommandWithOutput(args, output);
                default -> output.add("未知子命令：" + args[0] + "！请使用 /xrcmd help 查看帮助");
             }
         } catch (Exception e) {
@@ -60,11 +62,6 @@ public class RemoteCommandExecutor extends TabExecutor {
 
     // 处理 admin 命令
     private void handleAdminCommandWithOutput(String[] args, List<String> output) {
-        // 安全检查：确保 config 不为 null
-        if (XinCmd.INSTANCE == null || XinCmd.INSTANCE.getConfig() == null) {
-            output.add("错误：配置文件未加载，无法执行 admin 命令。请检查插件是否正确启用。");
-            return;
-        }
 
         if (args.length < 2) {
             output.add("用法：/xrcmd admin add <玩家名> | remove <玩家名> | list");
@@ -110,6 +107,32 @@ public class RemoteCommandExecutor extends TabExecutor {
         }
     }
 
+    // 处理 exec 命令 - 通过 xinbot 执行其他命令
+    private void handleExecCommandWithOutput(String[] args, List<String> output) {
+        if (args.length < 2) {
+            output.add("用法：/xrcmd exec <命令> [参数...]");
+            output.add("示例：/xrcmd exec say hello world");
+            return;
+        }
+        
+        // 提取要执行的命令（从第二个参数开始）
+        StringBuilder commandBuilder= new StringBuilder();
+        for (int i = 1; i < args.length; i++) {
+            if (i > 0) {
+                commandBuilder.append(" ");
+            }
+            commandBuilder.append(args[i]);
+        }
+        
+        String command = commandBuilder.toString();
+        output.add("准备以控制台模式执行命令：" + command);
+        
+        // 创建 CommandProcessor 并以控制台模式执行命令
+        CommandProcessor processor = new CommandProcessor();
+        List<String> result = processor.executeCommand(command, true);
+        output.addAll(result);
+    }
+
     // 显示帮助信息
     private List<String> showHelpOutput() {
         List<String> output = new ArrayList<>();
@@ -118,6 +141,7 @@ public class RemoteCommandExecutor extends TabExecutor {
         output.add("#command xrcmd admin add <玩家名> - 添加玩家到管理员列表");
         output.add("#command xrcmd admin remove <玩家名> - 从管理员列表移除玩家");
         output.add("#command xrcmd admin list - 列出管理员");
+        output.add("#command xrcmd exec <命令> [参数...] - 通过 xinbot 执行其他命令");
         output.add("#command xrcmd help - 显示此帮助信息");
         output.add("==============================");
         return output;

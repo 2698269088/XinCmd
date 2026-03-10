@@ -11,6 +11,8 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 - ✅ 异步命令执行，不阻塞主线程
 - ✅ 自动返回命令执行结果
 - ✅ 支持多个命令前缀
+- ✅ **以控制台身份执行命令**（通过 `CommandManager.callCommand()` 直接处理）
+- ✅ **exec 子命令** - 通过控制台执行任意 xinbot 命令
 
 ## 安装方法
 
@@ -59,6 +61,7 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 
 - `/xrcmd reload` - 重载配置文件
 - `/xrcmd help` - 显示帮助信息
+- `/xrcmd exec <命令> [参数...]` - **以控制台身份执行 xinbot 命令**
 
 #### 管理员管理命令
 
@@ -90,6 +93,15 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
    #command xrcmd admin remove Alex
    ```
 
+5. **以控制台身份执行 xinbot 命令**
+   ```
+   #command xrcmd exec say Hello World
+   #command xrcmd exec plugins
+   #cmd xrcmd exec help
+   ```
+   
+   > 💡 **注意**：`exec` 子命令会以控制台身份执行 xinbot 命令，而不是发送到游戏服务器。这意味着命令会在 xinbot 的控制台命令系统中处理，与直接在控制台输入的效果相同。
+
 ## 控制台命令
 
 你也可以在服务器控制台直接使用命令（不需要前缀）：
@@ -99,6 +111,7 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 /xrcmd admin add <玩家名>
 /xrcmd admin remove <玩家名>
 /xrcmd admin list
+/xrcmd exec <命令> [参数...]
 ```
 
 ## 安全建议
@@ -116,11 +129,26 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 
 ## 命令执行流程
 
+### 远程命令执行流程
+
 1. 玩家私聊发送 `#command xrcmd <命令>`
 2. 插件检查远程命令是否启用
 3. 如果启用了 admin 检查，验证玩家是否在管理员列表
 4. 异步执行命令
 5. 将执行结果通过私聊发送给玩家
+
+### 控制台命令执行方式
+
+- **`#command <普通命令>`**：通过 `CommandManager.callCommand()` 以控制台身份执行
+- **`/xrcmd exec <命令>`**：通过 `CommandManager.callCommand()` 以控制台身份执行
+- **底层实现**：直接调用 `Bot.Instance.getPluginManager().commands().callCommand(command)`
+
+### 两种执行模式对比
+
+| 执行方式 | 实现方法 | 用途 |
+|---------|---------|------|
+| **控制台模式** | `CommandManager.callCommand()` | 执行 xinbot 已注册的命令（如插件命令、内置命令） |
+| **服务器模式** | `Bot.Instance.sendCommand()` | 发送命令到游戏服务器控制台执行（如原版 MC 命令） |
 
 ## 技术细节
 
@@ -128,6 +156,8 @@ XinCmd 是一个基于 xinbot 框架的 Minecraft 机器人插件，允许管理
 - **线程安全**: 使用同步机制确保配置文件操作的安全性
 - **错误处理**: 完善的异常处理和日志记录
 - **自动恢复**: 命令执行失败不会影响插件的正常运行
+- **命令处理器**: 使用 `CommandProcessor` 统一管理命令执行
+- **控制台集成**: 通过 `CommandManager.callCommand()` 直接与 xinbot 命令系统交互
 
 ## 与 XinPga 的区别
 
